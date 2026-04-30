@@ -23,6 +23,10 @@ inputs:
     description: 'Minimum trust score (0-100). Action fails if score is below this threshold.'
     required: false
     default: '0'
+  github-token:
+    description: 'Token used to upload SARIF to GitHub Code Scanning. Defaults to the workflow-injected `github.token`, which carries the `security-events: write` permission already declared by the consuming workflow. Override only if you need a PAT (e.g. uploading a SARIF for a different repo).'
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   trust-score:

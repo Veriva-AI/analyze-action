@@ -36194,6 +36194,7 @@ async function run2() {
     const failOnCritical = core2.getInput("fail-on-critical").toLowerCase().trim() === "true";
     const minScoreRaw = parseInt(core2.getInput("min-score") || "0", 10);
     const minScore = Number.isNaN(minScoreRaw) ? 0 : Math.max(0, Math.min(100, minScoreRaw));
+    const githubToken = core2.getInput("github-token");
     const diff = await getPRDiff();
     if (!diff) {
       core2.info("No diff available \u2014 skipping analysis.");
@@ -36216,8 +36217,12 @@ async function run2() {
     });
     (0, import_node_fs.writeFileSync)(sarifPath, sarif, "utf-8");
     core2.info(`SARIF written to ${sarifPath}`);
-    if (uploadSarif && process.env.GITHUB_TOKEN) {
-      await uploadSARIF(sarifPath);
+    if (uploadSarif && githubToken) {
+      await uploadSARIF(sarifPath, githubToken);
+    } else if (uploadSarif) {
+      core2.warning(
+        "upload-sarif is true but no github-token is available \u2014 skipping SARIF upload to Code Scanning."
+      );
     }
     setOutputs(score.overall, score.grade, result.findings.length, criticalCount, sarifPath);
     if (result.findings.length > 0) {
@@ -36295,7 +36300,7 @@ async function getPRDiff() {
   }
   return null;
 }
-async function uploadSARIF(sarifPath) {
+async function uploadSARIF(sarifPath, githubToken) {
   try {
     const context2 = github.context;
     const ref = context2.payload.pull_request ? `refs/pull/${context2.payload.pull_request.number}/head` : context2.ref;
@@ -36304,18 +36309,22 @@ async function uploadSARIF(sarifPath) {
     const sarifContent = (0, import_node_fs.readFileSync)(sarifPath, "utf-8");
     const compressed = (0, import_node_zlib.gzipSync)(Buffer.from(sarifContent, "utf-8"));
     const encoded = compressed.toString("base64");
-    await exec.exec("gh", [
-      "api",
-      `/repos/${context2.repo.owner}/${context2.repo.repo}/code-scanning/sarifs`,
-      "-X",
-      "POST",
-      "-f",
-      `commit_sha=${sha}`,
-      "-f",
-      `ref=${ref}`,
-      "-f",
-      `sarif=${encoded}`
-    ]);
+    await exec.exec(
+      "gh",
+      [
+        "api",
+        `/repos/${context2.repo.owner}/${context2.repo.repo}/code-scanning/sarifs`,
+        "-X",
+        "POST",
+        "-f",
+        `commit_sha=${sha}`,
+        "-f",
+        `ref=${ref}`,
+        "-f",
+        `sarif=${encoded}`
+      ],
+      { env: { ...process.env, GH_TOKEN: githubToken } }
+    );
     core2.info("SARIF uploaded successfully.");
   } catch (err2) {
     core2.warning(`Failed to upload SARIF: ${err2 instanceof Error ? err2.message : String(err2)}`);
