@@ -1,0 +1,41 @@
+name: 'Veriva Code Scan'
+description: 'Analyze pull request diffs for AI-generated code issues, security vulnerabilities, and code quality problems.'
+author: 'Veriva'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  sarif-file:
+    description: 'Path to write SARIF output file'
+    required: false
+    default: 'veriva-results.sarif'
+  upload-sarif:
+    description: 'Whether to upload SARIF to GitHub Code Scanning'
+    required: false
+    default: 'true'
+  fail-on-critical:
+    description: 'Fail the action if CRITICAL or HIGH findings are detected'
+    required: false
+    default: 'false'
+  min-score:
+    description: 'Minimum trust score (0-100). Action fails if score is below this threshold.'
+    required: false
+    default: '0'
+
+outputs:
+  trust-score:
+    description: 'Trust score (0-100)'
+  grade:
+    description: 'Letter grade (A-F)'
+  findings-count:
+    description: 'Total number of findings'
+  critical-count:
+    description: 'Number of CRITICAL/HIGH findings'
+  sarif-file:
+    description: 'Path to the SARIF output file'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
