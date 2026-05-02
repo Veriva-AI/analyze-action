@@ -14,7 +14,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  security-events: write   # required when upload-sarif is true
+  security-events: write # required when upload-sarif is true
 
 jobs:
   veriva:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so the action can diff against base
+          fetch-depth: 0 # full history so the action can diff against base
 
       - uses: Veriva-AI/analyze-action@v1
         with:
@@ -34,22 +34,30 @@ jobs:
 
 ## Inputs
 
-| Name | Required | Default | Description |
-|---|---|---|---|
-| `sarif-file` | no | `veriva-results.sarif` | Path to write the SARIF output file. |
-| `upload-sarif` | no | `true` | Upload SARIF to GitHub Code Scanning. Needs `security-events: write`. |
-| `fail-on-critical` | no | `false` | Fail the action if any CRITICAL or HIGH findings are detected. |
-| `min-score` | no | `0` | Minimum trust score (0–100). Fails the action if the computed score is below this threshold. |
+| Name               | Required | Default                | Description                                                                                  |
+| ------------------ | -------- | ---------------------- | -------------------------------------------------------------------------------------------- |
+| `sarif-file`       | no       | `veriva-results.sarif` | Path to write the SARIF output file.                                                         |
+| `upload-sarif`     | no       | `true`                 | Upload SARIF to GitHub Code Scanning. Needs `security-events: write`.                        |
+| `fail-on-critical` | no       | `false`                | Fail the action if any CRITICAL or HIGH findings are detected.                               |
+| `min-score`        | no       | `0`                    | Minimum trust score (0–100). Fails the action if the computed score is below this threshold. |
 
 ## Outputs
 
-| Name | Description |
-|---|---|
-| `trust-score` | Trust score as an integer 0–100. |
-| `grade` | Letter grade A–F. |
-| `findings-count` | Total number of findings. |
-| `critical-count` | Number of CRITICAL / HIGH findings. |
-| `sarif-file` | Path to the generated SARIF file (echoed from the input). |
+| Name             | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| `trust-score`    | Trust score as an integer 0–100.                          |
+| `grade`          | Letter grade A–F.                                         |
+| `findings-count` | Total number of findings.                                 |
+| `critical-count` | Number of CRITICAL / HIGH findings.                       |
+| `sarif-file`     | Path to the generated SARIF file (echoed from the input). |
+
+## SARIF upload — Code Scanning requirement
+
+When `upload-sarif: true` (the default), the action POSTs the generated SARIF to GitHub's [code-scanning/sarifs API](https://docs.github.com/rest/code-scanning/code-scanning#upload-an-analysis-as-sarif-data) so findings appear in your repo's **Security → Code scanning** tab.
+
+This requires Code Scanning to be **enabled at the repository level** (Settings → Code security and analysis → Code scanning → Set up). Without it the upload returns `403 "Code scanning is not enabled for this repository"` and the action **degrades gracefully** — it logs `::warning::Failed to upload SARIF`, but the run still succeeds and you still get inline annotations on the diff (`::error::` / `::warning::` per finding) plus the `outputs.*` numbers.
+
+To turn off the upload entirely, set `upload-sarif: false`.
 
 ## Examples
 
